@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VK API</title>
+</head>
+<body>
+	<h1>Урок по работе с VK API</h1>  
+    <div id="my_result2">        </div> 
+    <input id="my_group2" value="https://vk.com/avtomobilist39">
+    <button id="my_button2">Жми! (groups.getMembers) </button> 
+
+    <div id="my_result3">    	 </div> 
+    <button id="my_button3">Жми3! (users.search)</button> 
+
+
+<script>
+
+
+var CallbackRegistry = {}; // реестр
+
+// при успехе вызовет onSuccess
+function scriptRequest(url,onSuccess) {
+
+  var scriptOk = false; // флаг, что вызов прошел успешно
+
+  // сгенерировать имя JSONP-функции для запроса
+  var callbackName = 'cb' + String(Math.random()).slice(-6);
+
+  // укажем это имя в URL запроса
+  url += ~url.indexOf('?') ? '&' : '?';
+  url += 'callback=CallbackRegistry.' + callbackName;
+
+  // ..и создадим саму функцию в реестре
+  CallbackRegistry[callbackName] = function(data) {
+    scriptOk = true; // обработчик вызвался, указать что всё ок
+    delete CallbackRegistry[callbackName]; // можно очистить реестр
+    onSuccess(data); // и вызвать onSuccess
+  };
+
+  // эта функция сработает при любом результате запроса
+  // важно: при успешном результате - всегда после JSONP-обработчика
+  function checkCallback() {
+    if (scriptOk) return ; // сработал обработчик?
+    delete CallbackRegistry[callbackName];
+    console.log( 'Ошибка при запросе ' + url); // нет - написать в консоль
+  }
+
+  var script = document.createElement('script');
+
+  // события script.onload/onerror срабатывают всегда после выполнения скрипта
+  script.onload = script.onerror = checkCallback;
+  script.src = url;
+  document.body.appendChild(script);
+}
+
+// вызывает func в случае успеха
+function sendVkApi(func,method,params) {
+	//var token='8c006a808c006a808c006a806b8c7797f388c008c006a80ecad4928eb73f99613923be6';
+	var token='2e798a972e798a972e798a971d2e018b9d22e792e798a974ed70c3c7c47ee089e3b4f2c';
+	var params_str = '';
+	for (var key in params) {
+	  params_str += "&"+key+"="+params[key];
+	}
+	var url ='https://api.vk.com/method/'+method+'?&v=5.52&access_token='+token+params_str;
+	console.log(url);
+	scriptRequest(url,func  );
+}
+
+
+document.getElementById('my_button2').addEventListener('click', function() {
+
+	my_group = document.getElementById('my_group2').value;
+	// получить список участников группы по id
+	// 1. сначала узнаем айди группы по урлу 
+	if (my_group.length <= 2) {
+		alert('Введите id группы или ссылку на нее');
+	}
+	else {
+		console.log ( my_id= mygetIdGroup(my_group) );
+	}
+
+	//отправляем запрос к апи groups.getById
+	sendVkApi(ifOk2,'groups.getMembers',{group_id:my_id,count:10} ); 
+
+	function ifOk2(data) {
+	  console.log(  data.response );
+	  //document.getElementById('my_result2').innerHTML =data.response.items;
+	  let str2 ='';
+	   data.response.items.forEach((item, index, array) => {
+		  str2 += item + '<br>';
+		});
+	  document.getElementById('my_result2').innerHTML =str2;
+	  
+	}
+
+	function mygetIdGroup(value) {
+        let split_value = value.split('/');
+        if(split_value[split_value.length - 1].indexOf('club', 0) === 0) {
+            split_value[split_value.length - 1] = split_value[split_value.length - 1].substr(4);
+        }
+        return split_value[split_value.length - 1];
+    }
+
+
+});
+
+///////// получаем именинников ///////////////////// 2 варианта: users.get или users.search (3 варианта)
+
+document.getElementById('my_button3').addEventListener('click', function() {
+	// получаем второй токен потому что первому не хватает прав для метода users.search
+	let url_for_token2 =  "https://oauth.vk.com/authorize?client_id=7863667&display=page&redirect_uri=https://oauth.vk.com/blank.html&scope=friends&response_type=token&v=5.131";
+	// три варианта: popup, iframe, redirect
+	let newWin = window.open(url_for_token2); //popup, но не забываем про кроссдоменные запросы.
+
+	///////// дописать получение токена
+	//const url = new URL('http://example.com/path/index.html#bottom')
+	//url.hash // '#bottom'
+
+	//sendVkApi(showmembersByBD,'users.search', {'group_id': 128570542, birth_day: '26', birth_month: '05', count:1000,fields: 'photo_id,photo_200'} ); 
+
+
+	function showmembersByBD(data) {
+	  console.log(  data.response );
+	  let str2 ='';
+	   data.response.items.forEach((item, index, array) => {
+		  str2 += item + '<br>';
+		});
+	  document.getElementById('my_result2').innerHTML =str2;
+	  
+	}
+
+
+
+});
+
+</script>
+
+
+
+</body>
+</html>
